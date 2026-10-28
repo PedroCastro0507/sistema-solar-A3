@@ -1,0 +1,41 @@
+1. Matrizes de rotação 4x4 (Aula 6)
+   Rx(37): ortogonal (R^T R = I)                               True
+   Rx(37): determinante                                        1.0
+   Ry(37): ortogonal (R^T R = I)                               True
+   Ry(37): determinante                                        1.0
+   Rz(37): ortogonal (R^T R = I)                               True
+   Rz(37): determinante                                        1.0
+   Ry(a) Ry(b) = Ry(a+b)                                       True
+   Rx(30) Rz(40) = Rz(40) Rx(30)  (comutam?)                   False
+
+2. Coordenadas homogêneas: ponto (w = 1) e direção (w = 0)
+   T(5,0,0) . [1 2 3 1]^T                                      [6.0, 2.0, 3.0, 1.0]
+   T(5,0,0) . [1 2 3 0]^T  (direção não se move)               [1.0, 2.0, 3.0, 0.0]
+
+3. Não-comutatividade: lua a d = 2 do planeta, ângulo de 90 graus
+   Ry(-90) . T(2,0,0) . origem  (transladar e depois girar)    [0.0, 0.0, 2.0, 1.0]
+   T(2,0,0) . Ry(-90) . origem  (girar e depois transladar)    [2.0, 0.0, 0.0, 1.0]
+
+4. Transposta no envio à GPU: (M P)^T = P^T M^T
+   M.P (vetor coluna) = P^T.M^T (vetor linha)                  True
+
+5. Órbitas circulares: raio constante e período
+   Mercúrio  |P| constante = 0.3871 UA; período =      88.0 dias True
+   Vênus     |P| constante = 0.7233 UA; período =     224.7 dias True
+   Terra     |P| constante = 1.0000 UA; período =     365.3 dias True
+   Marte     |P| constante = 1.5237 UA; período =     687.0 dias True
+   Júpiter   |P| constante = 5.2029 UA; período =    4332.8 dias True
+   Saturno   |P| constante = 9.5367 UA; período =   10755.9 dias True
+   Urano     |P| constante = 19.1892 UA; período =   30687.4 dias True
+   Netuno    |P| constante = 30.0699 UA; período =   60189.7 dias True
+   Terra volta ao mesmo ponto depois de um período             True
+
+6. Modelo circular x posição real (astropy, efeméride 'builtin')
+   Mercúrio  longitude real    3.5 | modelo   24.9 | erro      +21.4 graus
+   Vênus     longitude real   37.3 | modelo   38.1 | erro      +0.7 graus
+   Terra     longitude real   34.7 | modelo   36.5 | erro      +1.8 graus
+   Marte     longitude real   98.7 | modelo   89.4 | erro      -9.4 graus
+   Júpiter   longitude real  133.3 | modelo  128.4 | erro      -4.9 graus
+   Saturno   longitude real   11.7 | modelo   17.9 | erro      +6.1 graus
+   Urano     longitude real   63.0 | modelo   68.2 | erro      +5.2 graus
+   Netuno    longitude real    2.8 | modelo    3.5 | erro      +0.7 graus
