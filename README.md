@@ -75,6 +75,7 @@ codigo/
   texturas.py             esfera paramétrica com UV, anel com UV e carregamento das texturas
   shader_solar.py         shader GLSL com iluminação de Lambert
   dados_planetas.py       dados físicos dos planetas (NASA Planetary Fact Sheet)
+  verificacoes_finais.py  verificações das matrizes e das órbitas, sem janela 3D (python verificacoes_finais.py)
   resultados_parciais.py  verificações da entrega parcial (12/10/2026); grava gráficos em ../entrega/
   texturas/               texturas do Solar System Scope (CC BY 4.0)
 docs/
@@ -96,7 +97,7 @@ De **125 a 157 FPS** em um PC com GeForce RTX 3060 e Intel Core i7 de 11ª gera�
 
 ## Limites conhecidos
 
-- As órbitas são circulares e estão todas no mesmo plano. Por isso Mercúrio e Marte ficam alguns graus fora da posição real.
+- As órbitas são circulares e estão todas no mesmo plano. Comparado com a posição real (astropy, 28/10/2026), o erro vai de 0,7° (Vênus, Netuno) a 9,4° em Marte e 21,4° em Mercúrio, que têm as órbitas mais alongadas. Veja `codigo/verificacoes_finais.py`.
 - A posição inicial das luas na órbita não é a real.
 - No modo proporcional, as luas aparecem 4 vezes maiores que a proporção real, para ficarem visíveis.
 - A direção do eixo de cada planeta é simplificada. Só o ângulo de inclinação é real.
