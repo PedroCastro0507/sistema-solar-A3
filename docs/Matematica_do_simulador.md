@@ -45,7 +45,7 @@ O `R` é o raio da órbita (semieixo maior). O traço da órbita é o mesmo pont
 
 **Simplificações assumidas:**
 - As órbitas são circulares e estão todas no mesmo plano.
-- A posição é a média. Mercúrio e Marte, que têm as órbitas mais alongadas, ficam alguns graus fora da posição real.
+- A posição é a média. Medido em 28/10/2026 contra o astropy (`verificacoes_finais.py`): Vênus e Netuno ficam a 0,7° da posição real, Terra a 1,8°, Júpiter, Saturno e Urano entre 4,9° e 6,1°, Marte a 9,4° e Mercúrio a 21,4° (as duas órbitas mais alongadas).
 
 ## 4. Matriz do modelo de cada corpo (composição, Aula 6)
 
