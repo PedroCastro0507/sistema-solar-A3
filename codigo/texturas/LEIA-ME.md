@@ -15,3 +15,17 @@ Sem uma imagem, aquele corpo continua com a cor sólida de antes (o programa nã
 
 Referência sugerida (ABNT): SOLAR SYSTEM SCOPE. Solar Textures. [S. l.], [s.d.].
 Disponível em: https://www.solarsystemscope.com/textures/. Acesso em: 28 out. 2026. Licença CC BY 4.0.
+
+## Luas (02/11/2026)
+18 luas usam os mapas do NASA/JPL Solar System Simulator (https://science.nasa.gov/3d-resources/),
+créditos USGS, JPL e Caltech (montados com imagens das Voyager; Fobos e Deimos com imagens da Viking),
+projeção equirretangular 1440x720. Para baixar: dois cliques em `Baixar_texturas_das_luas.bat` nesta pasta
+(usa o curl do Windows; não baixa de novo o que já existe). Arquivos: lua_io, lua_europa, lua_ganimedes,
+lua_calisto, lua_mimas, lua_encelado, lua_tetis, lua_dione, lua_reia, lua_japeto, lua_miranda, lua_ariel,
+lua_umbriel, lua_titania, lua_oberon, lua_tritao, lua_fobos, lua_deimos (.jpg).
+Titã fica sem mapa de propósito: na luz visível ela é uma névoa laranja sem detalhes, e a cor sólida é fiel.
+Limites: as Voyager só fotografaram parte de algumas luas (Urano e Tritão principalmente); as partes não
+fotografadas aparecem lisas ou escuras no mapa. A longitude zero do mapa não foi alinhada com a rotação real
+(a fase das luas no simulador já não é real).
+Referência sugerida (ABNT): NASA; JPL. Solar System Simulator: 3D resources. Pasadena: JPL/Caltech, [s.d.].
+Disponível em: https://science.nasa.gov/3d-resources/. Acesso em: 2 nov. 2026. Créditos: USGS, JPL e Caltech.

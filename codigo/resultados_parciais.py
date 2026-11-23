@@ -8,6 +8,7 @@ import os
 import dados_planetas as dp
 
 PASTA_IMG = "../img" if os.path.isdir("../img") else "../entrega"   # onde ficam as imagens
+os.makedirs(PASTA_IMG, exist_ok=True)
 
 plt.rcParams.update({"font.family": "Liberation Serif", "font.size": 11})
 NOMES = [p[0] for p in dp.PLANETAS]

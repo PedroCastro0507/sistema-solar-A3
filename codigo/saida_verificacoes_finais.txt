@@ -19,7 +19,7 @@
 4. Transposta no envio à GPU: (M P)^T = P^T M^T
    M.P (vetor coluna) = P^T.M^T (vetor linha)                  True
 
-5. Órbitas circulares: raio constante e período
+5. Órbitas circulares (modelo da proposta): raio constante e período
    Mercúrio  |P| constante = 0.3871 UA; período =      88.0 dias True
    Vênus     |P| constante = 0.7233 UA; período =     224.7 dias True
    Terra     |P| constante = 1.0000 UA; período =     365.3 dias True
@@ -30,12 +30,38 @@
    Netuno    |P| constante = 30.0699 UA; período =   60189.7 dias True
    Terra volta ao mesmo ponto depois de um período             True
 
-6. Modelo circular x posição real (astropy, efeméride 'builtin')
-   Mercúrio  longitude real    3.5 | modelo   24.9 | erro      +21.4 graus
-   Vênus     longitude real   37.3 | modelo   38.1 | erro      +0.7 graus
-   Terra     longitude real   34.7 | modelo   36.5 | erro      +1.8 graus
-   Marte     longitude real   98.7 | modelo   89.4 | erro      -9.4 graus
-   Júpiter   longitude real  133.3 | modelo  128.4 | erro      -4.9 graus
-   Saturno   longitude real   11.7 | modelo   17.9 | erro      +6.1 graus
-   Urano     longitude real   63.0 | modelo   68.2 | erro      +5.2 graus
-   Netuno    longitude real    2.8 | modelo    3.5 | erro      +0.7 graus
+6. Equação de Kepler E - e.sen(E) = M (método de Newton)
+   Mercúrio  M =  -49.538  E =  -59.712  resto E - e.senE - M  0.0e+00 graus
+   Marte     M =  113.615  E =  118.326  resto E - e.senE - M  -1.4e-14 graus
+   e = 0  ->  E = M (a elipse vira círculo)                    True
+
+7. Órbita elíptica: periélio e afélio
+   Mercúrio  min = a(1-e) =  0.3075  max = a(1+e) =  0.4667 UA True
+   Vênus     min = a(1-e) =  0.7184  max = a(1+e) =  0.7282 UA True
+   Terra     min = a(1-e) =  0.9833  max = a(1+e) =  1.0167 UA True
+   Marte     min = a(1-e) =  1.3814  max = a(1+e) =  1.6661 UA True
+   Júpiter   min = a(1-e) =  4.9513  max = a(1+e) =  5.4544 UA True
+   Saturno   min = a(1-e) =  9.0240  max = a(1+e) = 10.0487 UA True
+   Urano     min = a(1-e) = 18.2821  max = a(1+e) = 20.0952 UA True
+   Netuno    min = a(1-e) = 29.8113  max = a(1+e) = 30.3287 UA True
+   Rz(Omega).Rx(I).Rz(omega) é ortogonal (R^T R = I)           True
+
+8. Modelos x posição real (astropy, efeméride 'builtin'), 28/10/2026 12h UTC
+               real | circular   erro | elíptico   erro | dist. real   circ.  elípt.
+   Mercúrio     3.5 |     24.9  +21.4 |      3.5  -0.01 |      0.351   0.387   0.351
+   Vênus       37.3 |     38.1   +0.7 |     37.3  -0.00 |      0.724   0.723   0.724
+   Terra       34.7 |     36.5   +1.8 |     34.7  -0.00 |      0.994   1.000   0.994
+   Marte       98.7 |     89.4   -9.4 |     98.7  -0.00 |      1.591   1.524   1.590
+   Júpiter    133.3 |    128.4   -4.9 |    133.3  +0.03 |      5.316   5.203   5.314
+   Saturno     11.7 |     17.9   +6.1 |     11.8  +0.07 |      9.426   9.537   9.427
+   Urano       63.0 |     68.2   +5.2 |     63.0  +0.00 |     19.436  19.189  19.431
+   Netuno       2.8 |      3.5   +0.7 |      2.8  -0.01 |     29.878  30.070  29.877
+
+9. Sombras: raio angular do Sol e da lua vistos da superfície do planeta (valores reais)
+   Lua       sobre Terra  : Sol 0.268°, Lua 0.263° (dist. média) anular (sobra um anel do Sol)
+   Io        sobre Júpiter: Sol 0.050°, Io 0.297° (dist. média) total (a lua cobre o Sol inteiro)
+   Ganimedes sobre Júpiter: Sol 0.050°, Ganimedes 0.151° (dist. média) total (a lua cobre o Sol inteiro)
+
+10. Céu de hoje (ceu_hoje.py) x astropy: altura e azimute em Curitiba, 28/10/2026
+   maior diferença de altura (24 casos)                        0.39 graus
+   maior diferença de azimute (24 casos)                       0.70 graus

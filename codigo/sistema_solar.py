@@ -1,7 +1,7 @@
 """Simulador 3D interativo do Sistema Solar - Projeto A3 (CGeRV, UNICURITIBA).
 
-- Órbitas circulares (x = R cos theta, z = R sen theta) calculadas com as matrizes da
-  Aula 6; o ângulo começa na posição média de hoje (dados do JPL/NASA, ver orbitas.py).
+- Órbitas elípticas pela equação de Kepler, P = Rz(Omega) . Rx(I) . Rz(omega) . [x' y' 0 1]^T,
+  ou circulares (x = R cos theta, z = R sen theta), tecla O. Dados do JPL/NASA (orbitas.py).
 - Toda a cena usa Model Matrix 4x4 própria (transformacoes.py): M = T . R . S.
 - Três modos de escala (tecla R):
   proporcional (padrão): distâncias na proporção real entre si e tamanhos na
@@ -10,26 +10,32 @@
   compacto: distâncias e tamanhos comprimidos para ver tudo de uma vez.
 - 20 luas principais, inclinação do eixo dos planetas, anéis de Saturno no equador.
 - Texturas UV (Solar System Scope, CC BY 4.0; ver texturas.py) e iluminação Lambert.
+- Sombras projetadas (eclipses): luas em planetas, planeta nas luas e nos anéis, anéis em
+  Saturno (shader_solar.py).
 - Câmera de espectador: livre (mouse olha, WASD voa) ou 3ª pessoa seguindo um corpo.
+- Céu de hoje (tecla C): quais planetas aparecem no céu de Curitiba (ceu_hoje.py).
 
 Controles: ver AJUDA abaixo (tecla H esconde/mostra a interface).
 
 Uso:
     python sistema_solar.py                  # janela interativa
     python sistema_solar.py --captura a.png  # salva uma imagem e encerra
-    opções: --foco Terra  --dist 6  --data 2026-10-28  --real  --dias 0
+    opções: --foco Terra  --dist 6  --data 2026-10-28  --real  --compacto  --circular  --dias 0
+             --yaw 30  --pitch 10  --do-sol (câmera do lado do Sol)  --ceu (painel do céu)
+             --matriz (painel da matriz)
 """
 import math
 import sys
 from datetime import datetime, timezone
 
-from ursina import (Ursina, Entity, Mesh, Vec3, color, window, application, camera, time, Text,
+from ursina import (Ursina, Entity, Mesh, Vec2, Vec3, color, window, application, camera, time, Text,
                     held_keys, mouse, clamp)
-from panda3d.core import Filename
+from panda3d.core import Filename, LVecBase4f
 
 import dados_planetas as dp
 import transformacoes as tf
 import orbitas as orb
+import ceu_hoje
 from shader_solar import sombreamento_solar
 from texturas import textura, esfera_uv, anel_uv
 
@@ -49,6 +55,7 @@ inicio = (datetime.strptime(DATA, "%Y-%m-%d").replace(tzinfo=timezone.utc) if DA
           else datetime.now(timezone.utc))
 dias = orb.dias_desde_j2000(inicio) + float(arg("--dias", "0"))
 MODOS = ["proporcional", "real", "compacto"]          # tecla R alterna nesta ordem
+orb.modelo = "circular" if "--circular" in ARGS else "elíptico"
 modo = "real" if "--real" in ARGS else "compacto" if "--compacto" in ARGS else "proporcional"
 
 app = Ursina(title="Sistema Solar 3D - A3", borderless=False, size=(1280, 720) if CAPTURA else None)
@@ -185,19 +192,19 @@ class Planeta:
         self.corpo.formula = "M = T(posição) . Rz(obliquidade) . Ry(rotação) . S(2r)"
         self.M_equador = tf.identidade()
         self.luas = []
-        self.linhas = {m: self._linha(m) for m in MODOS}
+        self.linhas = {(m, q): self._linha(m, q) for m in MODOS for q in orb.MODELOS}
 
-    def _linha(self, m):
+    def _linha(self, m, qual):
         global modo
         antigo, modo = modo, m
-        pts = [para_cena(*p) for p in orb.orbita(self.nome)]
+        pts = [para_cena(*p) for p in orb.orbita(self.nome, 720, qual, dias)]
         modo = antigo
         return Entity(model=Mesh(vertices=pts, mode="line", thickness=1), color=color.rgba(1, 1, 1, 0.25))
 
     def escalar(self):
         self.corpo.raio = raio_planeta(self.nome)
-        for m, linha in self.linhas.items():
-            linha.enabled = m == modo
+        for (m, q), linha in self.linhas.items():
+            linha.enabled = m == modo and q == orb.modelo
         for lua in self.luas:
             lua.escalar()
 
@@ -251,9 +258,48 @@ for p in planetas.values():
 # (borda interna do anel C a borda externa do anel A), UV radial
 saturno = planetas["Saturno"]
 aneis = Entity(model=anel_uv(1.24, 2.27), color=color.rgba(0.86, 0.78, 0.59, 0.8),
-               double_sided=True, unlit=True)
-if aplicar_textura(aneis, "Anéis"):
+               double_sided=True, shader=sombreamento_solar)
+aneis.raio = 1.0
+aneis.set_shader_input("lambert", 0.0)            # anel fino: sem N.L, só a sombra de Saturno
+tex_aneis = aplicar_textura(aneis, "Anéis")
+if tex_aneis:
     aneis.color = color.rgba(1, 1, 1, 0.95)
+    saturno.corpo.set_shader_input("anel_tex", tex_aneis)
+saturno.corpo.set_shader_input("anel_on", 1.0)
+
+# ---------------------------------------------------------------- sombras (eclipses)
+# Cada corpo recebe a lista dos corpos do mesmo sistema que podem fazer sombra nele:
+# o planeta faz sombra nas suas luas (eclipse lunar), as luas fazem sombra no planeta
+# (eclipse solar) e umas nas outras; Saturno faz sombra nos anéis.
+SOMBRAS = []                                      # (entidade que recebe, [entidades que fazem sombra])
+for p in planetas.values():
+    sistema = [p.corpo] + [l.corpo for l in p.luas]
+    p.sistema = sistema
+    for corpo in sistema:
+        SOMBRAS.append((corpo, [c for c in sistema if c is not corpo]))
+SOMBRAS.append((aneis, [saturno.corpo]))
+saturno.sistema.append(aneis)
+for corpo, ocl in SOMBRAS:
+    corpo.set_shader_input("n_ocl", float(len(ocl)))
+
+
+def atualizar_sombras(d):
+    """Envia ao shader o centro e o raio de cada corpo que faz sombra (vetor [x y z r])
+    e o raio angular real do Sol visto de cada sistema: asen(R_sol / distância real)."""
+    for p in planetas.values():
+        dist_km = tf.norma(list(orb.posicao(p.nome, d))) * orb.UA_KM
+        ang = math.asin(R_SOL_KM / dist_km)
+        for corpo in p.sistema:
+            corpo.set_shader_input("ang_sol", ang)
+    for corpo, ocl in SOMBRAS:
+        arr = corpo.get_shader_input("ocl")
+        for i, c in enumerate(ocl):
+            arr[i] = LVecBase4f(c.centro.x, c.centro.y, c.centro.z, c.raio)
+    r = saturno.corpo.raio
+    eixo = tf.aplicar(saturno.M_equador, tf.direcao(0, 1, 0))       # normal do plano dos anéis (w = 0)
+    saturno.corpo.set_shader_input("anel_c", saturno.corpo.centro)
+    saturno.corpo.set_shader_input("anel_n", Vec3(*eixo[:3]).normalized())
+    saturno.corpo.set_shader_input("anel_r", Vec2(1.24 * r, 2.27 * r))
 
 
 def atualizar_corpos(d):
@@ -261,6 +307,7 @@ def atualizar_corpos(d):
     for p in planetas.values():
         p.atualizar(d)
     enviar_matriz(aneis, tf.compor(saturno.M_equador, tf.escala(saturno.corpo.raio)))
+    atualizar_sombras(d)
 
 
 def aplicar_escala():
@@ -388,10 +435,12 @@ AJUDA = ("Mouse: olhar | WASD: voar | Espaço/Ctrl: subir/descer | Shift: rápid
          "1-8: focar planeta (Mercúrio a Netuno; o mouse gira em volta) | F: seguir/livre\n"
          "Tab: soltar o mouse (clique no Sol ou numa lua para focar) | +/-: velocidade do tempo\n"
          "P: pausar tudo (solta o mouse) | Esc: fechar | "
-         "R: escala | M: matriz do corpo | H: esconder interface")
+         "R: escala | O: órbita elíptica/circular | M: matriz | C: céu de hoje em Curitiba | H: esconder")
 ajuda = Text(AJUDA, position=(-0.87, 0.48), scale=0.75, color=color.rgba(1, 1, 1, 0.8))
 status = Text("", position=(-0.87, -0.43), scale=0.9)
 painel = Text("", position=(0.28, 0.40), scale=0.8, color=color.rgba(0.85, 1, 0.85, 0.95))
+painel_ceu = Text("", position=(-0.87, 0.33), scale=0.8, color=color.rgba(1, 0.95, 0.75, 0.95))
+ceu = {"ligado": False, "dias": None}
 
 
 def nome_foco():
@@ -403,7 +452,7 @@ def atualizar_hud():
     vel = "PAUSADO" if estado["pausa"] else VELOCIDADES[estado["vel"]][1]
     escala = {"real": "escala real", "proporcional": "proporcional (corpos 47x, luas 4x a mais)",
               "compacto": "compacto (didático)"}[modo]
-    status.text = f"{data:%d/%m/%Y %H:%M}  |  {vel}  |  {escala}  |  {nome_foco()}"
+    status.text = f"{data:%d/%m/%Y %H:%M}  |  {vel}  |  {escala}  |  órbita {orb.modelo}  |  {nome_foco()}"
     ajuda.enabled = status.enabled = estado["hud"] and not CAPTURA
     painel.enabled = estado["hud"] and estado["matriz"]
     if painel.enabled:
@@ -412,7 +461,30 @@ def atualizar_hud():
         painel.text = (f"{a.nome}\n{a.formula}\n\nM_total (calculada na CPU, P' = M . P):\n{tf.formatar(a.M, 2)}\n\n"
                        f"centro = M . [0 0 0 1]^T = ({c.x:.2f}, {c.y:.2f}, {c.z:.2f})\n"
                        f"distância ao Sol = |centro| = {tf.norma([c.x, c.y, c.z]):.2f} un.")
+        pl = next((p for p in planetas.values() if p.corpo is a), None)
+        if pl:
+            painel.text += "\n\n" + texto_orbita(pl.nome)
+    painel_ceu.enabled = (estado["hud"] or CAPTURA) and ceu["ligado"]
+    if painel_ceu.enabled and (ceu["dias"] is None or abs(dias - ceu["dias"]) > 1 / 48):
+        painel_ceu.text = ceu_hoje.relatorio(dias)            # refaz a cada 30 min do simulador
+        ceu["dias"] = dias
     window.fps_counter.enabled = estado["hud"] and not CAPTURA
+
+
+def texto_orbita(nome):
+    """Conta da órbita do planeta no instante atual (painel da tecla M)."""
+    if orb.modelo == "circular":
+        th = orb.angulo(nome, dias)
+        R = orb.ORBITAS[nome][0]
+        return (f"Órbita circular: theta = L0 + n.t = {th:.2f} graus\n"
+                f"posição = Ry(-theta) . [R 0 0 1]^T, R = {R:.4f} UA")
+    a_, e, I, L, wb, Om = orb.elementos(nome, dias)
+    M = (L - wb + 180) % 360 - 180
+    E = orb.kepler(M, e)
+    return (f"Órbita elíptica (Kepler): a = {a_:.4f} UA, e = {e:.4f}\n"
+            f"M = {M:.2f}  ->  E - e.sen E = M  ->  E = {E:.2f} graus\n"
+            f"posição = Rz({Om:.1f}) . Rx({I:.2f}) . Rz({wb - Om:.1f}) . [x' y' 0 1]^T\n"
+            f"distância ao Sol = a(1 - e.cos E) = {a_ * (1 - e * math.cos(math.radians(E))):.4f} UA")
 
 
 ORDEM_NUM = ["Sol"] + [p[0] for p in dp.PLANETAS]
@@ -422,7 +494,7 @@ def input(key):
     global modo
     if CAPTURA:
         return
-    if estado["pausa"] and key not in ("p", "escape", "h", "m"):
+    if estado["pausa"] and key not in ("p", "escape", "h", "m", "c"):
         return                                      # pausado: tudo congelado
     if key in [str(i) for i in range(1, 9)]:
         seguir(planetas[ORDEM_NUM[int(key)]].corpo)      # planeta no centro; mouse gira em volta
@@ -463,6 +535,13 @@ def input(key):
             seguir(cam["alvo"], instantaneo=True)
         else:
             seguir(sol, instantaneo=True)
+    elif key == "c":
+        ceu["ligado"] = not ceu["ligado"]
+        ceu["dias"] = None
+    elif key == "o":
+        orb.modelo = orb.MODELOS[(orb.MODELOS.index(orb.modelo) + 1) % len(orb.MODELOS)]
+        aplicar_escala()
+        atualizar_corpos(dias)
     elif key == "m":
         estado["matriz"] = not estado["matriz"]
     elif key == "h":
@@ -473,6 +552,17 @@ def input(key):
 atualizar_corpos(dias)
 inicial = sol if FOCO_INICIAL == "Sol" else next((e for e in selecionaveis if e.nome.split(" ")[0] == FOCO_INICIAL), sol)
 seguir(inicial, instantaneo=True)
+if "--yaw" in ARGS:
+    cam["yaw"] = float(arg("--yaw"))
+if "--pitch" in ARGS:
+    cam["pitch"] = float(arg("--pitch"))
+if "--ceu" in ARGS:
+    ceu["ligado"] = True
+if "--matriz" in ARGS:
+    estado["matriz"] = True
+if "--do-sol" in ARGS:            # câmera do lado do Sol (para ver sombras/eclipses)
+    c = inicial.centro
+    cam["yaw"] = math.degrees(math.atan2(c.x, c.z))
 if DIST_INICIAL:
     cam["dist"] = cam["dist_alvo"] = DIST_INICIAL if modo == "compacto" else DIST_INICIAL * raio_de(inicial)
 mouse.locked = not CAPTURA
@@ -492,7 +582,7 @@ def update():
     atualizar_hud()
     frames += 1
     if CAPTURA and frames == 8:
-        base.win.saveScreenshot(Filename(CAPTURA))
+        app.win.saveScreenshot(Filename(CAPTURA))
         application.quit()
 
 

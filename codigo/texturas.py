@@ -3,6 +3,8 @@
 Texturas: Solar System Scope (https://www.solarsystemscope.com/textures/),
 licença Creative Commons Attribution 4.0 International (CC BY 4.0).
 Imagens em projeção equirretangular 2048x1024 (exceto o anel de Saturno).
+Luas (menos a Lua da Terra): NASA/JPL Solar System Simulator, créditos USGS, JPL e Caltech,
+projeção equirretangular 1440x720 (https://science.nasa.gov/3d-resources/).
 
 Mapeamento UV da esfera (parametrização por latitude e longitude):
     theta (0 no polo norte, pi no polo sul), phi (0 a 2*pi ao redor do eixo Y)
@@ -31,6 +33,27 @@ ARQUIVOS = {
     "Anéis": "2k_saturn_ring_alpha.png",
     "Urano": "2k_uranus.jpg",
     "Netuno": "2k_neptune.jpg",
+    # Luas: NASA/JPL Solar System Simulator (science.nasa.gov/3d-resources), mapas 1440x720
+    # montados pelo USGS/JPL/Caltech com imagens das Voyager (e Viking em Fobos/Deimos).
+    # Titã fica sem mapa: na luz visível ela é coberta por névoa laranja (a cor sólida é fiel).
+    "Io": "lua_io.jpg",
+    "Europa": "lua_europa.jpg",
+    "Ganimedes": "lua_ganimedes.jpg",
+    "Calisto": "lua_calisto.jpg",
+    "Mimas": "lua_mimas.jpg",
+    "Encélado": "lua_encelado.jpg",
+    "Tétis": "lua_tetis.jpg",
+    "Dione": "lua_dione.jpg",
+    "Reia": "lua_reia.jpg",
+    "Jápeto": "lua_japeto.jpg",
+    "Miranda": "lua_miranda.jpg",
+    "Ariel": "lua_ariel.jpg",
+    "Umbriel": "lua_umbriel.jpg",
+    "Titânia": "lua_titania.jpg",
+    "Oberon": "lua_oberon.jpg",
+    "Tritão": "lua_tritao.jpg",
+    "Fobos": "lua_fobos.jpg",
+    "Deimos": "lua_deimos.jpg",
 }
 
 
